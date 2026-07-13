@@ -194,7 +194,4 @@ sequenceDiagram
 ## Current Risks / Limitations
 
 - Data is not durable. Restarting the application clears all patients, doctors, appointments, and bills.
-- `DataStore.add` can duplicate items in `dataList` when the same ID is added again.
-- Delete operations do not protect referential integrity. A patient or doctor can be deleted while appointments still reference their IDs.
-- Billing service silently ignores unknown bill IDs for charge/payment updates.
 - There is no concurrency protection beyond synchronized ID generation. This is acceptable for the current single-user CLI but not for a multi-user application.

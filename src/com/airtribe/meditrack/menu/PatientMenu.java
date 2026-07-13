@@ -1,6 +1,7 @@
 package com.airtribe.meditrack.menu;
 
 import com.airtribe.meditrack.entity.Patient;
+import com.airtribe.meditrack.service.AppointmentService;
 import com.airtribe.meditrack.service.PatientService;
 
 import java.util.List;
@@ -8,7 +9,7 @@ import java.util.Scanner;
 
 public class PatientMenu {
 
-    public static void handleMenu(Scanner scanner, PatientService patientService) {
+    public static void handleMenu(Scanner scanner, PatientService patientService, AppointmentService appointmentService) {
         boolean back = false;
         while (!back) {
             displayMenu();
@@ -28,7 +29,7 @@ public class PatientMenu {
                         listAllPatients(patientService);
                         break;
                     case 5:
-                        deletePatient(scanner, patientService);
+                        deletePatient(scanner, patientService, appointmentService);
                         break;
                     case 0:
                         back = true;
@@ -136,9 +137,12 @@ public class PatientMenu {
         }
     }
 
-    private static void deletePatient(Scanner scanner, PatientService patientService) {
+    private static void deletePatient(Scanner scanner, PatientService patientService, AppointmentService appointmentService) {
         String patientId = ConsoleInput.readRequired(scanner, "Enter Patient ID to delete: ");
         Patient patient = patientService.getPatient(patientId);
+        if (appointmentService.hasAppointmentForPatient(patientId)) {
+            throw new IllegalStateException("Cannot delete patient with existing appointments: " + patientId);
+        }
         System.out.print("Delete patient " + patient.getName() + "? (yes/no): ");
         if ("yes".equalsIgnoreCase(scanner.nextLine().trim())) {
             patientService.deletePatient(patientId);

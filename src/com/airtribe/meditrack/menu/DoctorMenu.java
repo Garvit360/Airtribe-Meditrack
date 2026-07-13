@@ -2,6 +2,7 @@ package com.airtribe.meditrack.menu;
 
 import com.airtribe.meditrack.entity.Doctor;
 import com.airtribe.meditrack.entity.Specialization;
+import com.airtribe.meditrack.service.AppointmentService;
 import com.airtribe.meditrack.service.DoctorService;
 
 import java.util.Arrays;
@@ -10,7 +11,7 @@ import java.util.Scanner;
 
 public class DoctorMenu {
 
-    public static void handleMenu(Scanner scanner, DoctorService doctorService) {
+    public static void handleMenu(Scanner scanner, DoctorService doctorService, AppointmentService appointmentService) {
         boolean back = false;
         while (!back) {
             displayMenu();
@@ -30,7 +31,7 @@ public class DoctorMenu {
                         listAllDoctors(doctorService);
                         break;
                     case 5:
-                        deleteDoctor(scanner, doctorService);
+                        deleteDoctor(scanner, doctorService, appointmentService);
                         break;
                     case 0:
                         back = true;
@@ -127,9 +128,12 @@ public class DoctorMenu {
         }
     }
 
-    private static void deleteDoctor(Scanner scanner, DoctorService doctorService) {
+    private static void deleteDoctor(Scanner scanner, DoctorService doctorService, AppointmentService appointmentService) {
         String doctorId = ConsoleInput.readRequired(scanner, "Enter Doctor ID to delete: ");
         Doctor doctor = doctorService.getDoctor(doctorId);
+        if (appointmentService.hasAppointmentForDoctor(doctorId)) {
+            throw new IllegalStateException("Cannot delete doctor with existing appointments: " + doctorId);
+        }
         System.out.print("Delete doctor " + doctor.getName() + "? (yes/no): ");
         if ("yes".equalsIgnoreCase(scanner.nextLine().trim())) {
             doctorService.deleteDoctor(doctorId);

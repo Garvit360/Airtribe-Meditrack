@@ -29,10 +29,10 @@ public class MainMenu {
         try {
             switch (choice) {
                 case 1:
-                    PatientMenu.handleMenu(scanner, patientService);
+                    PatientMenu.handleMenu(scanner, patientService, appointmentService);
                     return true;
                 case 2:
-                    DoctorMenu.handleMenu(scanner, doctorService);
+                    DoctorMenu.handleMenu(scanner, doctorService, appointmentService);
                     return true;
                 case 3:
                     AppointmentMenu.handleMenu(scanner, appointmentService, patientService, doctorService);

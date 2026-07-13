@@ -54,6 +54,24 @@ public class AppointmentService {
         appointmentStore.update(appointmentId, appointment);
     }
 
+    public boolean hasAppointmentForPatient(String patientId){
+        for (Appointment appointment : appointmentStore.getAll()){
+            if (appointment.getPatientId().equals(patientId)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasAppointmentForDoctor(String doctorId){
+        for (Appointment appointment : appointmentStore.getAll()){
+            if (appointment.getDoctorId().equals(doctorId)){
+                return true;
+            }
+        }
+        return false;
+    }
+
     public List<Appointment> getPatientAppointment(String patientId){
         List<Appointment> results = new ArrayList<>();
         for (Appointment apt: appointmentStore.getAll()){
