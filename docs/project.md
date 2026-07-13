@@ -71,8 +71,9 @@ Billing: Bill object, taxes, multiple billing strategies (Strategy Pattern bonus
 Search: dynamic search for doctors/patients.
 Menu-driven console UI in Main.java.
 Use ArrayList, HashMap, DataStore<T> generic class for storage.
+
 Bonus Features — choose any two (20 pts total)
-[DataStore.java](../src/com/airtribe/meditrack/util/DataStore.java)
+
 A. File I/O & Persistence (10 pts)
 Save/load Patient/Doctor/Appointment via CSV and/or Java Serialization.
 Use try-with-resources. Implement CSVUtil with String.split(",").
