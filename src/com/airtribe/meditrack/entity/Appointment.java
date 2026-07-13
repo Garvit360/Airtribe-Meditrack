@@ -4,7 +4,7 @@ import com.airtribe.meditrack.util.IdGenerator;
 
 import java.time.LocalDateTime;
 
-public class Appointment {
+public class Appointment implements Cloneable{
 
     private String appointmentId;
     private Long appointmentDateTime;
@@ -76,5 +76,15 @@ public class Appointment {
                 ", patient=" + patientId +
                 ", doctor=" + doctorId +
                 '}';
+    }
+
+    // Appointment contains only immutable fields, so super.clone() is sufficient.
+    @Override
+    public Appointment clone() {
+        try {
+            return (Appointment) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Appointment cloning failed" + e);
+        }
     }
 }

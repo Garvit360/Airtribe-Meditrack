@@ -6,22 +6,26 @@ import java.util.List;
 
 public class Doctor extends Person{
 
-    private String doctorId;
+    //private String doctorId;
     private Specialization specialization;
     private int yearsOfExperience;
     private List<String> availability;
     private double consultationRate;
 
     public Doctor(String name, int age, String gender, String contactNumber, String email, Specialization specialization, int yearsOfExperience, double consultationRate) {
-        super(name, age, gender, contactNumber, email);
-        this.doctorId = IdGenerator.generateDoctorId();
+        super(IdGenerator.generateDoctorId(), name, age, gender, contactNumber, email);
         this.specialization = specialization;
         this.yearsOfExperience = yearsOfExperience;
         this.consultationRate = consultationRate;
     }
 
+    @Override
+    public String getEntityType() {
+        return "Doctor";
+    }
+
     public String getDoctorId() {
-        return doctorId;
+        return getId();
     }
 
     public Specialization getSpecialization() {
@@ -59,7 +63,7 @@ public class Doctor extends Person{
     @Override
     public String toString() {
         return "Doctor{" +
-                "doctorId='" + doctorId + '\'' +
+                "doctorId='" + getDoctorId() + '\'' +
                 ", specialization=" + specialization +
                 ", yearsOfExperience=" + yearsOfExperience +
                 ", availability=" + availability +

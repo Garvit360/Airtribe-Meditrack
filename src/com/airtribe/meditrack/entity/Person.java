@@ -1,6 +1,6 @@
 package com.airtribe.meditrack.entity;
 
-public class Person {
+public class Person extends MedicalEntity implements Cloneable{
 
     private String name;
     private int age;
@@ -8,12 +8,18 @@ public class Person {
     private String contactNumber;
     private String email;
 
-    public Person(String name, int age, String gender, String contactNumber, String email) {
+    public Person(String id, String name, int age, String gender, String contactNumber, String email) {
+        super(id);
         this.name = name;
         this.age = age;
         this.gender = gender;
         this.contactNumber = contactNumber;
         this.email = email;
+    }
+
+    @Override
+    public String getEntityType() {
+        return "Person";
     }
 
     public String getName() {
@@ -54,5 +60,10 @@ public class Person {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    @Override
+    protected Person clone() throws CloneNotSupportedException{
+        return (Person) super.clone();
     }
 }

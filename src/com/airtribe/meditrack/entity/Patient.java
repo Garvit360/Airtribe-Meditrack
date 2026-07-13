@@ -4,9 +4,9 @@ import com.airtribe.meditrack.util.IdGenerator;
 
 import java.util.Arrays;
 
-public class Patient extends Person{
+public class Patient extends Person {
 
-    private String patientId;
+    //private String patientId;
     private String[] medicalHistory;
     private String[] allergies;
     private String bloodGroup;
@@ -19,15 +19,19 @@ public class Patient extends Person{
     }
 
     public Patient(String name, int age, String gender, String contactNumber, String email, String bloodGroup, String emergencyContact, String address) {
-        super(name, age, gender, contactNumber, email);
-        this.patientId = IdGenerator.generatePatientId();
+        super(IdGenerator.generatePatientId() , name, age, gender, contactNumber, email);
         this.bloodGroup = bloodGroup;
         this.emergencyContact = emergencyContact;
         this.address = address;
     }
 
+    @Override
+    public String getEntityType() {
+        return "Patient";
+    }
+
     public String getPatientId() {
-        return patientId;
+        return getId();
     }
 
     public String[] getMedicalHistory() {
@@ -78,12 +82,24 @@ public class Patient extends Person{
     @Override
     public String toString() {
         return "Patient{" +
-                "patientId='" + patientId + '\'' +
+                "patientId='" + getPatientId() + '\'' +
                 ", medicalHistory=" + Arrays.toString(medicalHistory) +
                 ", allergies=" + Arrays.toString(allergies) +
                 ", bloodGroup='" + bloodGroup + '\'' +
                 ", emergencyContact='" + emergencyContact + '\'' +
                 ", address='" + address + '\'' +
                 '}';
+    }
+
+    @Override
+    public Patient clone() {
+        try {
+            Patient clone = (Patient) super.clone();
+            clone.medicalHistory = this.medicalHistory.clone();
+            clone.allergies = this.allergies.clone();
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Patient Cloning failed", e);
+        }
     }
 }
