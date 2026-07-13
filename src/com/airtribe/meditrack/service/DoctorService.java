@@ -6,7 +6,6 @@ import com.airtribe.meditrack.exception.DoctorNotFoundException;
 import com.airtribe.meditrack.util.DataStore;
 import com.airtribe.meditrack.util.Validator;
 
-import javax.print.Doc;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,6 +77,16 @@ public class DoctorService {
                 if(d.getName().toLowerCase().contains(name.toLowerCase())){
                     results.add(d);
                 }
+            }
+        }
+        return results;
+    }
+
+    public List<Doctor> searchDoctorsByKeyword(String keyword) {
+        List<Doctor> results = new ArrayList<>();
+        for (Doctor doctor : doctorStore.getAll()) {
+            if (doctor.matchesSearchCriteria(keyword)) {
+                results.add(doctor);
             }
         }
         return results;

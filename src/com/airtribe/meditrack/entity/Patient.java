@@ -1,10 +1,11 @@
 package com.airtribe.meditrack.entity;
 
+import com.airtribe.meditrack.interfaces.Searchable;
 import com.airtribe.meditrack.util.IdGenerator;
 
 import java.util.Arrays;
 
-public class Patient extends Person {
+public class Patient extends Person implements Searchable {
 
     //private String patientId;
     private String[] medicalHistory;
@@ -32,6 +33,20 @@ public class Patient extends Person {
 
     public String getPatientId() {
         return getId();
+    }
+
+    @Override
+    public boolean matchesSearchCriteria(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return false;
+        }
+
+        String normalizedKeyword = keyword.toLowerCase();
+        return getPatientId().toLowerCase().contains(normalizedKeyword)
+                || getName().toLowerCase().contains(normalizedKeyword)
+                || containsIgnoreCase(bloodGroup, normalizedKeyword)
+                || containsIgnoreCase(getContactNumber(), normalizedKeyword)
+                || containsIgnoreCase(getEmail(), normalizedKeyword);
     }
 
     public String[] getMedicalHistory() {
@@ -101,5 +116,9 @@ public class Patient extends Person {
         } catch (CloneNotSupportedException e) {
             throw new AssertionError("Patient Cloning failed", e);
         }
+    }
+
+    private boolean containsIgnoreCase(String value, String normalizedKeyword) {
+        return value != null && value.toLowerCase().contains(normalizedKeyword);
     }
 }

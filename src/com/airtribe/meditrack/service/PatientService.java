@@ -73,4 +73,14 @@ public class PatientService {
         }
         return results;
     }
+
+    public List<Patient> searchPatientsByKeyword(String keyword) {
+        List<Patient> results = new ArrayList<>();
+        for (Patient patient : patientStore.getAll()) {
+            if (patient.matchesSearchCriteria(keyword)) {
+                results.add(patient);
+            }
+        }
+        return results;
+    }
 }

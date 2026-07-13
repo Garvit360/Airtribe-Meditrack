@@ -1,10 +1,11 @@
 package com.airtribe.meditrack.entity;
 
+import com.airtribe.meditrack.interfaces.Searchable;
 import com.airtribe.meditrack.util.IdGenerator;
 
 import java.util.List;
 
-public class Doctor extends Person{
+public class Doctor extends Person implements Searchable {
 
     //private String doctorId;
     private Specialization specialization;
@@ -26,6 +27,20 @@ public class Doctor extends Person{
 
     public String getDoctorId() {
         return getId();
+    }
+
+    @Override
+    public boolean matchesSearchCriteria(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return false;
+        }
+
+        String normalizedKeyword = keyword.toLowerCase();
+        return getDoctorId().toLowerCase().contains(normalizedKeyword)
+                || getName().toLowerCase().contains(normalizedKeyword)
+                || specialization.name().toLowerCase().contains(normalizedKeyword)
+                || containsIgnoreCase(getContactNumber(), normalizedKeyword)
+                || containsIgnoreCase(getEmail(), normalizedKeyword);
     }
 
     public Specialization getSpecialization() {
@@ -69,5 +84,9 @@ public class Doctor extends Person{
                 ", availability=" + availability +
                 ", consultationRate=" + consultationRate +
                 '}';
+    }
+
+    private boolean containsIgnoreCase(String value, String normalizedKeyword) {
+        return value != null && value.toLowerCase().contains(normalizedKeyword);
     }
 }
