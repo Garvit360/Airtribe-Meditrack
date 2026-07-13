@@ -14,6 +14,9 @@ public class DataStore<T> {
     }
 
     public void add(String id, T item){
+        if(dataMap.containsKey(id)){
+            throw new IllegalArgumentException("Duplicate Id: " + id);
+        }
         dataMap.put(id, item);
         dataList.add(item);
     }
