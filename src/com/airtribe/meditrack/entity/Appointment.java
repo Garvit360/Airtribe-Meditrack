@@ -14,12 +14,18 @@ public class Appointment implements Cloneable{
     private String doctorId;
 
     public Appointment(Long appointmentDateTime, String reasonOfVisit, String patientId, String doctorId) {
-        this.appointmentId = IdGenerator.generateAppointmentId();
+        this(IdGenerator.generateAppointmentId(), appointmentDateTime, AppointmentStatus.PENDING, reasonOfVisit,
+                patientId, doctorId);
+    }
+
+    public Appointment(String appointmentId, Long appointmentDateTime, AppointmentStatus appointmentStatus,
+                       String reasonOfVisit, String patientId, String doctorId) {
+        this.appointmentId = appointmentId;
         this.appointmentDateTime = appointmentDateTime;
+        this.appointmentStatus = appointmentStatus;
         this.reasonOfVisit = reasonOfVisit;
         this.patientId = patientId;
         this.doctorId = doctorId;
-        this.appointmentStatus = AppointmentStatus.PENDING;
     }
 
     public void confirmAppointment(){

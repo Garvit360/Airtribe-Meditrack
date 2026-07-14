@@ -21,4 +21,23 @@ public class IdGenerator {
     public static synchronized String generateBillId(){
         return "BILL" + (++billCounter);
     }
+
+    public static synchronized void syncPatientCounter(String patientId) {
+        patientCounter = Math.max(patientCounter, extractNumber(patientId, "PAT"));
+    }
+
+    public static synchronized void syncDoctorCounter(String doctorId) {
+        doctorCounter = Math.max(doctorCounter, extractNumber(doctorId, "DOC"));
+    }
+
+    public static synchronized void syncAppointmentCounter(String appointmentId) {
+        appointmentCounter = Math.max(appointmentCounter, extractNumber(appointmentId, "APPT"));
+    }
+
+    private static int extractNumber(String id, String prefix) {
+        if (id == null || !id.startsWith(prefix)) {
+            return 0;
+        }
+        return Integer.parseInt(id.substring(prefix.length()));
+    }
 }
