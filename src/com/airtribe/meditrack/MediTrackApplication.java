@@ -16,6 +16,13 @@ public class MediTrackApplication {
         AppointmentService appointmentService = new AppointmentService(patientService, doctorService);
         BillingService billingService = new BillingService(appointmentService);
 
+        if (shouldLoadData(args)) {
+            patientService.loadPatientsFromCsv();
+            doctorService.loadDoctorsFromCsv();
+            appointmentService.loadAppointmentsFromCsv();
+            System.out.println("Persisted data loaded successfully.");
+        }
+
         try (Scanner scanner = new Scanner(System.in)) {
             boolean running = true;
             System.out.println("MediTrack application started successfully.");
@@ -26,6 +33,15 @@ public class MediTrackApplication {
                         appointmentService, billingService);
             }
         }
+    }
+
+    private static boolean shouldLoadData(String[] args) {
+        for (String arg : args) {
+            if ("--loadData".equals(arg)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static int readMenuChoice(Scanner scanner) {

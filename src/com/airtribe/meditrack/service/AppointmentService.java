@@ -1,9 +1,11 @@
 package com.airtribe.meditrack.service;
 
+import com.airtribe.meditrack.constants.Constants;
 import com.airtribe.meditrack.entity.Appointment;
 import com.airtribe.meditrack.entity.Doctor;
 import com.airtribe.meditrack.entity.Patient;
 import com.airtribe.meditrack.exception.AppointmentNotFoundException;
+import com.airtribe.meditrack.util.CSVUtil;
 import com.airtribe.meditrack.util.DataStore;
 
 import java.util.ArrayList;
@@ -13,11 +15,17 @@ public class AppointmentService {
     private DataStore<Appointment> appointmentStore;
     private DoctorService doctorService;
     private PatientService patientService;
+    private boolean persistenceEnabled;
 
     public AppointmentService(PatientService patientService, DoctorService doctorService){
+        this(patientService, doctorService, true);
+    }
+
+    public AppointmentService(PatientService patientService, DoctorService doctorService, boolean persistenceEnabled){
         this.appointmentStore = new DataStore<>();
         this.patientService = patientService;
         this.doctorService = doctorService;
+        this.persistenceEnabled = persistenceEnabled;
     }
 
     public Appointment createAppointment(String doctorId, String patientId, Long dateTime, String reason){
@@ -27,6 +35,7 @@ public class AppointmentService {
 
         Appointment appointment = new Appointment(dateTime, reason, patientId, doctorId);
         appointmentStore.add(appointment.getAppointmentId(), appointment);
+        saveAppointments();
         return appointment;
     }
 
@@ -46,12 +55,14 @@ public class AppointmentService {
         Appointment appointment = getAppointment(appointmentId);
         appointment.cancelAppointment();
         appointmentStore.update(appointmentId, appointment);
+        saveAppointments();
     }
 
     public void confirmAppointment(String appointmentId){
         Appointment appointment = getAppointment(appointmentId);
         appointment.confirmAppointment();
         appointmentStore.update(appointmentId, appointment);
+        saveAppointments();
     }
 
     public boolean hasAppointmentForPatient(String patientId){
@@ -86,4 +97,26 @@ public class AppointmentService {
         return getPatientAppointment(patientId);
     }
 
+    public List<Appointment> getAllAppointments() {
+        return new ArrayList<>(appointmentStore.getAll());
+    }
+
+    public void loadAppointments(List<Appointment> appointments) {
+        for (Appointment appointment : appointments) {
+            patientService.getPatient(appointment.getPatientId());
+            doctorService.getDoctor(appointment.getDoctorId());
+            appointmentStore.add(appointment.getAppointmentId(), appointment);
+        }
+    }
+
+    public void loadAppointmentsFromCsv() {
+        loadAppointments(CSVUtil.loadAppointments(Constants.APPOINTMENTS_FILE));
+    }
+
+    public void saveAppointments() {
+        if (!persistenceEnabled) {
+            return;
+        }
+        CSVUtil.saveAppointments(getAllAppointments(), Constants.APPOINTMENTS_FILE);
+    }
 }

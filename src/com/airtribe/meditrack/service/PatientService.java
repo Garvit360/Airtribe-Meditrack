@@ -1,7 +1,9 @@
 package com.airtribe.meditrack.service;
 
+import com.airtribe.meditrack.constants.Constants;
 import com.airtribe.meditrack.entity.Patient;
 import com.airtribe.meditrack.exception.PatientNotFoundException;
+import com.airtribe.meditrack.util.CSVUtil;
 import com.airtribe.meditrack.util.DataStore;
 import com.airtribe.meditrack.util.Validator;
 
@@ -10,15 +12,22 @@ import java.util.List;
 
 public class PatientService {
     private DataStore<Patient> patientStore;
+    private boolean persistenceEnabled;
 
     public PatientService(){
+        this(true);
+    }
+
+    public PatientService(boolean persistenceEnabled){
         this.patientStore = new DataStore<Patient>();
+        this.persistenceEnabled = persistenceEnabled;
     }
 
     //CRUD OPERATION
     public void registerPatient(Patient patient){
         Validator.validPatient(patient);
         patientStore.add(patient.getPatientId(), patient);
+        savePatients();
     }
 
     public Patient getPatient(String patientId) throws PatientNotFoundException {
@@ -31,10 +40,12 @@ public class PatientService {
     public void updatePatient(Patient patient){
         Validator.validPatient(patient);
         patientStore.update(patient.getPatientId(), patient);
+        savePatients();
     }
 
     public void deletePatient(String patientId){
         patientStore.remove(patientId);
+        savePatients();
     }
 
     public List<Patient> getAllPatient(){
@@ -82,5 +93,23 @@ public class PatientService {
             }
         }
         return results;
+    }
+
+    public void loadPatients(List<Patient> patients) {
+        for (Patient patient : patients) {
+            Validator.validPatient(patient);
+            patientStore.add(patient.getPatientId(), patient);
+        }
+    }
+
+    public void loadPatientsFromCsv() {
+        loadPatients(CSVUtil.loadPatients(Constants.PATIENTS_FILE));
+    }
+
+    public void savePatients() {
+        if (!persistenceEnabled) {
+            return;
+        }
+        CSVUtil.savePatients(getAllPatients(), Constants.PATIENTS_FILE);
     }
 }

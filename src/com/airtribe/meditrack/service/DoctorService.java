@@ -1,8 +1,10 @@
 package com.airtribe.meditrack.service;
 
+import com.airtribe.meditrack.constants.Constants;
 import com.airtribe.meditrack.entity.Doctor;
 import com.airtribe.meditrack.entity.Specialization;
 import com.airtribe.meditrack.exception.DoctorNotFoundException;
+import com.airtribe.meditrack.util.CSVUtil;
 import com.airtribe.meditrack.util.DataStore;
 import com.airtribe.meditrack.util.Validator;
 
@@ -11,14 +13,22 @@ import java.util.List;
 
 public class DoctorService {
     private DataStore<Doctor> doctorStore;
+    private boolean persistenceEnabled;
+
     public DoctorService(){
+        this(true);
+    }
+
+    public DoctorService(boolean persistenceEnabled){
         this.doctorStore = new DataStore<Doctor>();
+        this.persistenceEnabled = persistenceEnabled;
     }
 
     //CRUD OPERATION
     public void registerDoctor(Doctor doctor){
         Validator.validDoctor(doctor);
         doctorStore.add(doctor.getDoctorId(), doctor);
+        saveDoctors();
     }
 
     public Doctor getDoctor(String doctorId) throws DoctorNotFoundException {
@@ -32,10 +42,12 @@ public class DoctorService {
     public void updateDoctor(Doctor doctor){
         Validator.validDoctor(doctor);
         doctorStore.update(doctor.getDoctorId(), doctor);
+        saveDoctors();
     }
 
     public void deleteDoctor(String doctorId){
         doctorStore.remove(doctorId);
+        saveDoctors();
     }
 
     public List<Doctor> getAllDoctors(){
@@ -90,5 +102,23 @@ public class DoctorService {
             }
         }
         return results;
+    }
+
+    public void loadDoctors(List<Doctor> doctors) {
+        for (Doctor doctor : doctors) {
+            Validator.validDoctor(doctor);
+            doctorStore.add(doctor.getDoctorId(), doctor);
+        }
+    }
+
+    public void loadDoctorsFromCsv() {
+        loadDoctors(CSVUtil.loadDoctors(Constants.DOCTORS_FILE));
+    }
+
+    public void saveDoctors() {
+        if (!persistenceEnabled) {
+            return;
+        }
+        CSVUtil.saveDoctors(getAllDoctors(), Constants.DOCTORS_FILE);
     }
 }
