@@ -9,6 +9,7 @@ import com.airtribe.meditrack.service.AppointmentService;
 import com.airtribe.meditrack.service.DoctorService;
 import com.airtribe.meditrack.service.PatientService;
 import com.airtribe.meditrack.util.CSVUtil;
+import com.airtribe.meditrack.util.IdGenerator;
 
 import java.util.Arrays;
 import java.util.List;
@@ -19,6 +20,7 @@ public class TestRunner {
     private static int failed;
 
     public static void main(String[] args) {
+        testIdGeneratorSingleton();
         testSearchablePatients();
         testSearchableDoctors();
         testMedicalEntityIds();
@@ -33,6 +35,13 @@ public class TestRunner {
         if (failed > 0) {
             throw new AssertionError("Manual tests failed: " + failed);
         }
+    }
+
+    private static void testIdGeneratorSingleton() {
+        IdGenerator first = IdGenerator.getInstance();
+        IdGenerator second = IdGenerator.getInstance();
+
+        assertTrue(first == second, "IdGenerator should return the same singleton instance");
     }
 
     private static void testSearchablePatients() {
