@@ -20,7 +20,7 @@ public class Patient extends Person implements Searchable {
     }
 
     public Patient(String name, int age, String gender, String contactNumber, String email, String bloodGroup, String emergencyContact, String address) {
-        this(IdGenerator.generatePatientId(), name, age, gender, contactNumber, email, bloodGroup,
+        this(IdGenerator.getInstance().generatePatientId(), name, age, gender, contactNumber, email, bloodGroup,
                 emergencyContact, address);
     }
 

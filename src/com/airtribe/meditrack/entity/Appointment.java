@@ -14,7 +14,7 @@ public class Appointment implements Cloneable{
     private String doctorId;
 
     public Appointment(Long appointmentDateTime, String reasonOfVisit, String patientId, String doctorId) {
-        this(IdGenerator.generateAppointmentId(), appointmentDateTime, AppointmentStatus.PENDING, reasonOfVisit,
+        this(IdGenerator.getInstance().generateAppointmentId(), appointmentDateTime, AppointmentStatus.PENDING, reasonOfVisit,
                 patientId, doctorId);
     }
 

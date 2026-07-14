@@ -151,7 +151,7 @@ public class CSVUtil {
                 values[6],
                 values[7],
                 values[8]);
-        IdGenerator.syncPatientCounter(patient.getPatientId());
+        IdGenerator.getInstance().syncPatientCounter(patient.getPatientId());
         return patient;
     }
 
@@ -180,7 +180,7 @@ public class CSVUtil {
                 Specialization.valueOf(values[6]),
                 Integer.parseInt(values[7]),
                 Double.parseDouble(values[8]));
-        IdGenerator.syncDoctorCounter(doctor.getDoctorId());
+        IdGenerator.getInstance().syncDoctorCounter(doctor.getDoctorId());
         return doctor;
     }
 
@@ -203,7 +203,7 @@ public class CSVUtil {
                 values[3],
                 values[4],
                 values[5]);
-        IdGenerator.syncAppointmentCounter(appointment.getAppointmentId());
+        IdGenerator.getInstance().syncAppointmentCounter(appointment.getAppointmentId());
         return appointment;
     }
 

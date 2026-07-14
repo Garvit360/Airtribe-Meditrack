@@ -18,7 +18,7 @@ public class Bill implements Payable {
      private BillStatus billStatus;
 
      public Bill(String appointmentId, String patientId, double consultationCharge) {
-          this.billId = IdGenerator.generateBillId();
+          this.billId = IdGenerator.getInstance().generateBillId();
           this.appointmentId = appointmentId;
           this.patientId = patientId;
           this.consultationCharge = consultationCharge;

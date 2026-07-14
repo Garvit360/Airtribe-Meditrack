@@ -14,7 +14,7 @@ public class Doctor extends Person implements Searchable {
     private double consultationRate;
 
     public Doctor(String name, int age, String gender, String contactNumber, String email, Specialization specialization, int yearsOfExperience, double consultationRate) {
-        this(IdGenerator.generateDoctorId(), name, age, gender, contactNumber, email, specialization,
+        this(IdGenerator.getInstance().generateDoctorId(), name, age, gender, contactNumber, email, specialization,
                 yearsOfExperience, consultationRate);
     }
 
