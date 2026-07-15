@@ -1,6 +1,7 @@
 package com.airtribe.meditrack;
 
 import com.airtribe.meditrack.menu.MainMenu;
+import com.airtribe.meditrack.observer.ConsoleAppointmentNotifier;
 import com.airtribe.meditrack.service.AppointmentService;
 import com.airtribe.meditrack.service.BillingService;
 import com.airtribe.meditrack.service.DoctorService;
@@ -14,6 +15,7 @@ public class MediTrackApplication {
         PatientService patientService = new PatientService();
         DoctorService doctorService = new DoctorService();
         AppointmentService appointmentService = new AppointmentService(patientService, doctorService);
+        appointmentService.addObserver(new ConsoleAppointmentNotifier());
         BillingService billingService = new BillingService(appointmentService);
 
         if (shouldLoadData(args)) {

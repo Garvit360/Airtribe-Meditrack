@@ -6,6 +6,7 @@ import com.airtribe.meditrack.entity.Bill;
 import com.airtribe.meditrack.entity.Doctor;
 import com.airtribe.meditrack.entity.Patient;
 import com.airtribe.meditrack.entity.Specialization;
+import com.airtribe.meditrack.observer.AppointmentObserver;
 import com.airtribe.meditrack.service.AppointmentService;
 import com.airtribe.meditrack.service.BillingService;
 import com.airtribe.meditrack.service.DoctorService;
@@ -34,6 +35,8 @@ public class TestRunner {
         testBillFactoryCreatesConsultationBill();
         testBillFactoryCreatesManualBill();
         testBillingServiceUsesFactoryCreatedBillData();
+        testAppointmentObserverReceivesLifecycleEvents();
+        testRemovedAppointmentObserverStopsReceivingEvents();
 
         System.out.println("Tests passed: " + passed);
         System.out.println("Tests failed: " + failed);
@@ -259,6 +262,90 @@ public class TestRunner {
                 "BillingService should use doctor rate through factory path");
         assertTrue(billingService.getBill(bill.getBillId()) == bill,
                 "BillingService should store generated bill");
+    }
+
+    private static void testAppointmentObserverReceivesLifecycleEvents() {
+        PatientService patientService = new PatientService(false);
+        DoctorService doctorService = new DoctorService(false);
+        AppointmentService appointmentService = new AppointmentService(patientService, doctorService, false);
+        RecordingAppointmentObserver observer = new RecordingAppointmentObserver();
+        appointmentService.addObserver(observer);
+
+        Patient patient = new Patient("Observer Patient", 42, "Female", "9876543227",
+                "observer.patient@example.com", "A+", "9123456789", "Ahmedabad");
+        Doctor doctor = new Doctor("Observer Doctor", 53, "Male", "9876543228",
+                "observer.doctor@example.com", Specialization.NEUROLOGY, 23, 1400.0);
+
+        patientService.registerPatient(patient);
+        doctorService.registerDoctor(doctor);
+
+        Appointment appointment = appointmentService.createAppointment(
+                doctor.getDoctorId(), patient.getPatientId(), 1780000000000L, "ObserverCheckup");
+        appointmentService.confirmAppointment(appointment.getAppointmentId());
+        appointmentService.cancelAppointment(appointment.getAppointmentId());
+
+        assertEquals(1, observer.createdCount,
+                "Observer should receive one appointment created event");
+        assertEquals(1, observer.confirmedCount,
+                "Observer should receive one appointment confirmed event");
+        assertEquals(1, observer.cancelledCount,
+                "Observer should receive one appointment cancelled event");
+        assertEquals(appointment.getAppointmentId(), observer.lastAppointmentId,
+                "Observer should receive the changed appointment");
+    }
+
+    private static void testRemovedAppointmentObserverStopsReceivingEvents() {
+        PatientService patientService = new PatientService(false);
+        DoctorService doctorService = new DoctorService(false);
+        AppointmentService appointmentService = new AppointmentService(patientService, doctorService, false);
+        RecordingAppointmentObserver observer = new RecordingAppointmentObserver();
+        appointmentService.addObserver(observer);
+        appointmentService.removeObserver(observer);
+
+        Patient patient = new Patient("Removed Observer Patient", 43, "Male", "9876543229",
+                "removed.observer.patient@example.com", "B+", "9123456790", "Jaipur");
+        Doctor doctor = new Doctor("Removed Observer Doctor", 54, "Female", "9876543230",
+                "removed.observer.doctor@example.com", Specialization.ORTHOPEDICS, 24, 1450.0);
+
+        patientService.registerPatient(patient);
+        doctorService.registerDoctor(doctor);
+
+        Appointment appointment = appointmentService.createAppointment(
+                doctor.getDoctorId(), patient.getPatientId(), 1790000000000L, "RemovedObserverCheckup");
+        appointmentService.confirmAppointment(appointment.getAppointmentId());
+        appointmentService.cancelAppointment(appointment.getAppointmentId());
+
+        assertEquals(0, observer.createdCount,
+                "Removed observer should not receive appointment created events");
+        assertEquals(0, observer.confirmedCount,
+                "Removed observer should not receive appointment confirmed events");
+        assertEquals(0, observer.cancelledCount,
+                "Removed observer should not receive appointment cancelled events");
+    }
+
+    private static class RecordingAppointmentObserver implements AppointmentObserver {
+        private int createdCount;
+        private int confirmedCount;
+        private int cancelledCount;
+        private String lastAppointmentId;
+
+        @Override
+        public void onAppointmentCreated(Appointment appointment) {
+            createdCount++;
+            lastAppointmentId = appointment.getAppointmentId();
+        }
+
+        @Override
+        public void onAppointmentConfirmed(Appointment appointment) {
+            confirmedCount++;
+            lastAppointmentId = appointment.getAppointmentId();
+        }
+
+        @Override
+        public void onAppointmentCancelled(Appointment appointment) {
+            cancelledCount++;
+            lastAppointmentId = appointment.getAppointmentId();
+        }
     }
 
     private static void assertTrue(boolean condition, String message) {
