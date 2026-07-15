@@ -5,6 +5,7 @@ import com.airtribe.meditrack.entity.Appointment;
 import com.airtribe.meditrack.entity.Doctor;
 import com.airtribe.meditrack.entity.Patient;
 import com.airtribe.meditrack.exception.AppointmentNotFoundException;
+import com.airtribe.meditrack.observer.AppointmentObserver;
 import com.airtribe.meditrack.util.CSVUtil;
 import com.airtribe.meditrack.util.DataStore;
 
@@ -16,6 +17,7 @@ public class AppointmentService {
     private DoctorService doctorService;
     private PatientService patientService;
     private boolean persistenceEnabled;
+    private List<AppointmentObserver> observers = new ArrayList<>();
 
     public AppointmentService(PatientService patientService, DoctorService doctorService){
         this(patientService, doctorService, true);
@@ -36,6 +38,7 @@ public class AppointmentService {
         Appointment appointment = new Appointment(dateTime, reason, patientId, doctorId);
         appointmentStore.add(appointment.getAppointmentId(), appointment);
         saveAppointments();
+        notifyAppointmentCreated(appointment);
         return appointment;
     }
 
@@ -56,6 +59,7 @@ public class AppointmentService {
         appointment.cancelAppointment();
         appointmentStore.update(appointmentId, appointment);
         saveAppointments();
+        notifyAppointmentCancelled(appointment);
     }
 
     public void confirmAppointment(String appointmentId){
@@ -63,6 +67,7 @@ public class AppointmentService {
         appointment.confirmAppointment();
         appointmentStore.update(appointmentId, appointment);
         saveAppointments();
+        notifyAppointmentConfirmed(appointment);
     }
 
     public boolean hasAppointmentForPatient(String patientId){
@@ -118,5 +123,31 @@ public class AppointmentService {
             return;
         }
         CSVUtil.saveAppointments(getAllAppointments(), Constants.APPOINTMENTS_FILE);
+    }
+
+    public void addObserver(AppointmentObserver observer){
+        observers.add(observer);
+    }
+
+    public void removeObserver(AppointmentObserver observer){
+        observers.remove(observer);
+    }
+
+    private void notifyAppointmentCreated(Appointment appointment){
+        for (AppointmentObserver observer: observers){
+            observer.onAppointmentCreated(appointment);
+        }
+    }
+
+    private void notifyAppointmentConfirmed(Appointment appointment){
+        for (AppointmentObserver observer: observers){
+            observer.onAppointmentConfirmed(appointment);
+        }
+    }
+
+    private void notifyAppointmentCancelled(Appointment appointment){
+        for (AppointmentObserver observer: observers){
+            observer.onAppointmentCancelled(appointment);
+        }
     }
 }
