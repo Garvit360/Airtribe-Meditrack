@@ -2,12 +2,15 @@ package com.airtribe.meditrack.test;
 
 import com.airtribe.meditrack.entity.Appointment;
 import com.airtribe.meditrack.entity.AppointmentStatus;
+import com.airtribe.meditrack.entity.Bill;
 import com.airtribe.meditrack.entity.Doctor;
 import com.airtribe.meditrack.entity.Patient;
 import com.airtribe.meditrack.entity.Specialization;
 import com.airtribe.meditrack.service.AppointmentService;
+import com.airtribe.meditrack.service.BillingService;
 import com.airtribe.meditrack.service.DoctorService;
 import com.airtribe.meditrack.service.PatientService;
+import com.airtribe.meditrack.util.BillFactory;
 import com.airtribe.meditrack.util.CSVUtil;
 import com.airtribe.meditrack.util.IdGenerator;
 
@@ -28,6 +31,9 @@ public class TestRunner {
         testAppointmentClone();
         testCsvPersistenceRoundTrip();
         testLoadedIdsSyncCounters();
+        testBillFactoryCreatesConsultationBill();
+        testBillFactoryCreatesManualBill();
+        testBillingServiceUsesFactoryCreatedBillData();
 
         System.out.println("Tests passed: " + passed);
         System.out.println("Tests failed: " + failed);
@@ -196,6 +202,63 @@ public class TestRunner {
                 "Loaded doctor IDs should sync the doctor counter");
         assertEquals("APPT9901", nextAppointment.getAppointmentId(),
                 "Loaded appointment IDs should sync the appointment counter");
+    }
+
+    private static void testBillFactoryCreatesConsultationBill() {
+        Patient patient = new Patient("Factory Patient", 34, "Female", "9876543223",
+                "factory.patient@example.com", "AB-", "9123456787", "Kolkata");
+        Doctor doctor = new Doctor("Factory Doctor", 49, "Male", "9876543224",
+                "factory.doctor@example.com", Specialization.CARDIOLOGY, 19, 1250.0);
+        Appointment appointment = new Appointment(1760000000000L, "Consultation",
+                patient.getPatientId(), doctor.getDoctorId());
+
+        Bill bill = BillFactory.createConsultationBill(appointment, doctor);
+
+        assertEquals(appointment.getAppointmentId(), bill.getAppointmentId(),
+                "Consultation bill factory should copy appointment ID");
+        assertEquals(patient.getPatientId(), bill.getPatient(),
+                "Consultation bill factory should copy patient ID");
+        assertEquals(doctor.getConsultationRate(), bill.getConsultationCharge(),
+                "Consultation bill factory should use doctor consultation rate");
+    }
+
+    private static void testBillFactoryCreatesManualBill() {
+        Bill bill = BillFactory.createManualBill("APPT-MANUAL", "PAT-MANUAL", 700.0);
+
+        assertEquals("APPT-MANUAL", bill.getAppointmentId(),
+                "Manual bill factory should use appointment ID");
+        assertEquals("PAT-MANUAL", bill.getPatient(),
+                "Manual bill factory should use patient ID");
+        assertEquals(700.0, bill.getConsultationCharge(),
+                "Manual bill factory should use consultation charge");
+    }
+
+    private static void testBillingServiceUsesFactoryCreatedBillData() {
+        PatientService patientService = new PatientService(false);
+        DoctorService doctorService = new DoctorService(false);
+        AppointmentService appointmentService = new AppointmentService(patientService, doctorService, false);
+        BillingService billingService = new BillingService(appointmentService);
+
+        Patient patient = new Patient("Service Bill Patient", 37, "Female", "9876543225",
+                "service.bill.patient@example.com", "O+", "9123456788", "Hyderabad");
+        Doctor doctor = new Doctor("Service Bill Doctor", 46, "Male", "9876543226",
+                "service.bill.doctor@example.com", Specialization.GENERAL_MEDICINE, 17, 650.0);
+
+        patientService.registerPatient(patient);
+        doctorService.registerDoctor(doctor);
+        Appointment appointment = appointmentService.createAppointment(
+                doctor.getDoctorId(), patient.getPatientId(), 1770000000000L, "RoutineCheckup");
+
+        Bill bill = billingService.generateBill(appointment, doctor);
+
+        assertEquals(appointment.getAppointmentId(), bill.getAppointmentId(),
+                "BillingService should create bill for appointment");
+        assertEquals(patient.getPatientId(), bill.getPatient(),
+                "BillingService should create bill for appointment patient");
+        assertEquals(doctor.getConsultationRate(), bill.getConsultationCharge(),
+                "BillingService should use doctor rate through factory path");
+        assertTrue(billingService.getBill(bill.getBillId()) == bill,
+                "BillingService should store generated bill");
     }
 
     private static void assertTrue(boolean condition, String message) {
