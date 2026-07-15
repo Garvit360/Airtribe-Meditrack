@@ -4,6 +4,7 @@ import com.airtribe.meditrack.entity.Appointment;
 import com.airtribe.meditrack.entity.Bill;
 import com.airtribe.meditrack.entity.Doctor;
 import com.airtribe.meditrack.exception.BillNotFoundException;
+import com.airtribe.meditrack.util.BillFactory;
 import com.airtribe.meditrack.util.DataStore;
 
 public class BillingService {
@@ -17,13 +18,15 @@ public class BillingService {
 
     public Bill generateBill(String appointmentId, double consultationCharge){
         Appointment appointment = appointmentService.getAppointment(appointmentId);
-        Bill bill = new Bill(appointmentId, appointment.getPatientId(), consultationCharge);
+        Bill bill = BillFactory.createManualBill(appointmentId, appointment.getPatientId(), consultationCharge);
         billStore.add(bill.getBillId(), bill);
         return bill;
     }
 
     public Bill generateBill(Appointment appointment, Doctor doctor){
-        return generateBill(appointment.getAppointmentId(), doctor.getConsultationRate());
+        Bill bill = BillFactory.createConsultationBill(appointment, doctor);
+        billStore.add(bill.getBillId(), bill);
+        return bill;
     }
 
     public void addMedicationCharges(String billId, double amount){
