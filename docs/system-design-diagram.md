@@ -1,161 +1,147 @@
-# MediTrack System Design Diagram
+# MediTrack System Design
 
 ## Scope
 
-MediTrack is currently a single-process console application. It has no database, network API, authentication layer, or external integrations. Data is stored in memory through `DataStore<T>`, so all records are lost when the JVM exits.
+MediTrack is a single-process Java console application. It uses in-memory stores while the app is running and CSV files for durable patient, doctor, and appointment persistence.
+
+The app does not currently include a database, network API, authentication, or external integrations.
 
 ## System Context
 
 ```mermaid
 flowchart LR
     User["Console User"]
-    App["MediTrack Console Application\nJava CLI"]
+    App["MediTrack Java CLI"]
+    Csv["CSV files\npatients.csv\ndoctors.csv\nappointments.csv"]
 
     User -->|"Keyboard input"| App
     App -->|"Console output"| User
+    App <-->|"load/save"| Csv
 ```
 
-## Container / Component View
+## Component View
 
 ```mermaid
 flowchart TB
-    subgraph Runtime["JVM Process"]
-        Main["Main\nDefault entry point"]
-        Application["MediTrackApplication\nBootstraps services and menu loop"]
+    Main["Main"]
+    Application["MediTrackApplication"]
 
-        subgraph MenuLayer["Menu Layer\ncom.airtribe.meditrack.menu"]
-            MainMenu["MainMenu"]
-            PatientMenu["PatientMenu"]
-            DoctorMenu["DoctorMenu"]
-            AppointmentMenu["AppointmentMenu"]
-            BillingMenu["BillingMenu"]
-            SearchMenu["SearchMenu"]
-            FeatureMenu["FeatureDemonstrationMenu"]
-            ConsoleInput["ConsoleInput"]
-        end
+    subgraph Menu["menu"]
+        MainMenu["MainMenu"]
+        PatientMenu["PatientMenu"]
+        DoctorMenu["DoctorMenu"]
+        AppointmentMenu["AppointmentMenu"]
+        BillingMenu["BillingMenu"]
+        SearchMenu["SearchMenu"]
+        FeatureMenu["FeatureDemonstrationMenu"]
+        ConsoleInput["ConsoleInput"]
+    end
 
-        subgraph ServiceLayer["Service Layer\ncom.airtribe.meditrack.service"]
-            PatientService["PatientService"]
-            DoctorService["DoctorService"]
-            AppointmentService["AppointmentService"]
-            BillingService["BillingService"]
-        end
+    subgraph Service["service"]
+        PatientService["PatientService"]
+        DoctorService["DoctorService"]
+        AppointmentService["AppointmentService"]
+        BillingService["BillingService"]
+    end
 
-        subgraph DomainLayer["Domain Layer\ncom.airtribe.meditrack.entity"]
-            Person["Person"]
-            Patient["Patient"]
-            Doctor["Doctor"]
-            Appointment["Appointment"]
-            Bill["Bill"]
-            BillSummary["BillSummary"]
-            Enums["AppointmentStatus\nBillStatus\nSpecialization"]
-        end
+    subgraph Domain["entity"]
+        MedicalEntity["MedicalEntity"]
+        Person["Person"]
+        Patient["Patient"]
+        Doctor["Doctor"]
+        Appointment["Appointment"]
+        Bill["Bill"]
+        BillSummary["BillSummary"]
+        Enums["Specialization\nAppointmentStatus\nBillStatus"]
+    end
 
-        subgraph UtilityLayer["Utility Layer\ncom.airtribe.meditrack.util"]
-            DataStore["DataStore<T>\nIn-memory HashMap + ArrayList"]
-            Validator["Validator"]
-            IdGenerator["IdGenerator"]
-            DateUtil["DateUtil"]
-        end
+    subgraph Utility["util"]
+        DataStore["DataStore<T>"]
+        Validator["Validator"]
+        CSVUtil["CSVUtil"]
+        IdGenerator["IdGenerator singleton"]
+        BillFactory["BillFactory"]
+        DateUtil["DateUtil"]
+    end
+
+    subgraph Observer["observer"]
+        AppointmentObserver["AppointmentObserver"]
+        ConsoleNotifier["ConsoleAppointmentNotifier"]
     end
 
     Main --> Application
     Application --> MainMenu
-    MainMenu --> PatientMenu
-    MainMenu --> DoctorMenu
-    MainMenu --> AppointmentMenu
-    MainMenu --> BillingMenu
-    MainMenu --> SearchMenu
-    MainMenu --> FeatureMenu
-    PatientMenu --> ConsoleInput
-    DoctorMenu --> ConsoleInput
-    AppointmentMenu --> ConsoleInput
-    BillingMenu --> ConsoleInput
-    SearchMenu --> ConsoleInput
-
-    PatientMenu --> PatientService
-    DoctorMenu --> DoctorService
-    AppointmentMenu --> AppointmentService
-    AppointmentMenu --> PatientService
-    AppointmentMenu --> DoctorService
-    BillingMenu --> BillingService
-    BillingMenu --> AppointmentService
-    BillingMenu --> DoctorService
-    SearchMenu --> PatientService
-    SearchMenu --> DoctorService
-    SearchMenu --> AppointmentService
-
-    PatientService --> Validator
-    DoctorService --> Validator
+    Application --> ConsoleNotifier
+    MainMenu --> Menu
+    Menu --> Service
     PatientService --> DataStore
     DoctorService --> DataStore
     AppointmentService --> DataStore
     BillingService --> DataStore
-    AppointmentService --> PatientService
-    AppointmentService --> DoctorService
-    BillingService --> AppointmentService
-
-    PatientService --> Patient
-    DoctorService --> Doctor
-    AppointmentService --> Appointment
-    BillingService --> Bill
-    Bill --> BillSummary
-    Patient --> Person
-    Doctor --> Person
-    Patient --> IdGenerator
-    Doctor --> IdGenerator
-    Appointment --> IdGenerator
-    Bill --> IdGenerator
-    AppointmentMenu --> DateUtil
-    SearchMenu --> DateUtil
+    PatientService --> CSVUtil
+    DoctorService --> CSVUtil
+    AppointmentService --> CSVUtil
+    BillingService --> BillFactory
+    AppointmentService --> AppointmentObserver
+    ConsoleNotifier -.implements.-> AppointmentObserver
+    Service --> Domain
+    Domain --> IdGenerator
 ```
 
 ## Main Data Flows
 
-### Patient / Doctor Registration
+### Startup With `--loadData`
+
+```mermaid
+sequenceDiagram
+    participant Main
+    participant App as MediTrackApplication
+    participant Patients as PatientService
+    participant Doctors as DoctorService
+    participant Appointments as AppointmentService
+    participant CSV as CSVUtil
+
+    Main->>App: main(args)
+    App->>App: detect --loadData
+    App->>Patients: loadPatientsFromCsv()
+    Patients->>CSV: loadPatients(data/patients.csv)
+    App->>Doctors: loadDoctorsFromCsv()
+    Doctors->>CSV: loadDoctors(data/doctors.csv)
+    App->>Appointments: loadAppointmentsFromCsv()
+    Appointments->>CSV: loadAppointments(data/appointments.csv)
+```
+
+Patients load before doctors and appointments. Appointments validate that referenced patient and doctor IDs exist.
+
+### Patient / Doctor Save
 
 ```mermaid
 sequenceDiagram
     actor User
     participant Menu as PatientMenu / DoctorMenu
     participant Service as PatientService / DoctorService
-    participant Validator
     participant Store as DataStore<T>
-    participant Ids as IdGenerator
+    participant CSV as CSVUtil
 
-    User->>Menu: Enter registration details
-    Menu->>Ids: Entity constructor requests ID
-    Menu->>Service: registerPatient(patient) / registerDoctor(doctor)
-    Service->>Validator: Validate required fields
-    Validator-->>Service: OK or InvalidDataException
-    Service->>Store: add(id, entity)
-    Store-->>Service: Stored in memory
-    Service-->>Menu: Success
-    Menu-->>User: Print generated ID
+    User->>Menu: create/update/delete
+    Menu->>Service: service operation
+    Service->>Store: update in-memory store
+    Service->>CSV: save current records
+    Service-->>Menu: success
 ```
 
-### Appointment Booking
+### Appointment Observer Flow
 
 ```mermaid
 sequenceDiagram
-    actor User
-    participant Menu as AppointmentMenu
-    participant AppointmentService
-    participant PatientService
-    participant DoctorService
-    participant Store as DataStore<Appointment>
+    participant App as MediTrackApplication
+    participant Service as AppointmentService
+    participant Observer as ConsoleAppointmentNotifier
 
-    User->>Menu: Enter patient ID, doctor ID, date, reason
-    Menu->>PatientService: getPatient(patientId)
-    PatientService-->>Menu: Patient or PatientNotFoundException
-    Menu->>DoctorService: getDoctor(doctorId)
-    DoctorService-->>Menu: Doctor or DoctorNotFoundException
-    Menu->>AppointmentService: createAppointment(doctorId, patientId, dateTime, reason)
-    AppointmentService->>PatientService: getPatient(patientId)
-    AppointmentService->>DoctorService: getDoctor(doctorId)
-    AppointmentService->>Store: add(appointmentId, appointment)
-    AppointmentService-->>Menu: Appointment
-    Menu-->>User: Print appointment ID
+    App->>Service: addObserver(observer)
+    Service->>Service: create/confirm/cancel appointment
+    Service->>Observer: onAppointmentCreated / Confirmed / Cancelled
+    Observer-->>Service: print notification
 ```
 
 ### Billing
@@ -164,34 +150,29 @@ sequenceDiagram
 sequenceDiagram
     actor User
     participant Menu as BillingMenu
-    participant BillingService
-    participant AppointmentService
-    participant DoctorService
+    participant Billing as BillingService
+    participant Factory as BillFactory
     participant Store as DataStore<Bill>
-    participant Bill
 
-    User->>Menu: Enter appointment ID
-    Menu->>AppointmentService: getAppointment(appointmentId)
-    AppointmentService-->>Menu: Appointment
-    Menu->>DoctorService: getDoctor(doctorId)
-    DoctorService-->>Menu: Doctor
-    Menu->>BillingService: generateBill(appointment, doctor)
-    BillingService->>AppointmentService: getAppointment(appointmentId)
-    BillingService->>Bill: new Bill(appointmentId, patientId, consultationRate)
-    BillingService->>Store: add(billId, bill)
-    BillingService-->>Menu: Bill
-    Menu-->>User: Print bill ID and total
+    User->>Menu: enter appointment ID
+    Menu->>Billing: generateBill(appointment, doctor)
+    Billing->>Factory: createConsultationBill(appointment, doctor)
+    Factory-->>Billing: Bill
+    Billing->>Store: add(billId, bill)
+    Billing-->>Menu: generated bill
 ```
 
 ## Architectural Notes
 
-- The menu layer owns console input/output only. It should not own business rules.
-- The service layer owns validation orchestration, lookup, status changes, and in-memory persistence access.
-- The entity layer owns domain state and simple domain behavior such as appointment status transitions and bill total calculation.
-- `DataStore<T>` is an in-memory repository substitute, not durable persistence.
-- `Appointment` stores `patientId` and `doctorId` instead of object references. This keeps the entity simple but means services must enforce referential integrity.
+- `MedicalEntity` owns shared entity identity; `Person` extends it, and `Patient` / `Doctor` extend `Person`.
+- `IdGenerator` is an eager singleton. It owns counters and syncs counters after loading CSV IDs.
+- `CSVUtil` uses try-with-resources and simple comma splitting per assignment requirements.
+- `BillFactory` centralizes bill construction for `BillingService`.
+- `AppointmentService` is the observer subject for appointment lifecycle events.
+- `DataStore<T>` is still the runtime repository; CSV persistence is a simple file-backed durability layer.
 
-## Current Risks / Limitations
+## Current Limitations
 
-- Data is not durable. Restarting the application clears all patients, doctors, appointments, and bills.
-- There is no concurrency protection beyond synchronized ID generation. This is acceptable for the current single-user CLI but not for a multi-user application.
+- CSV parsing is simple and does not support commas inside user-entered fields.
+- Billing records are not persisted to CSV.
+- The app is single-user and single-process; `IdGenerator` methods are synchronized, but stores are not designed for concurrent writers.

@@ -1,6 +1,8 @@
 # MediTrack Class UML Diagram
 
-## Domain And Service UML
+This diagram reflects the current implementation, not the original assignment wish list.
+
+## Domain, Service, Utility, And Pattern UML
 
 ```mermaid
 classDiagram
@@ -12,7 +14,18 @@ classDiagram
 
     class MediTrackApplication {
         +main(String[] args) void
+        -shouldLoadData(String[] args) boolean
         -readMenuChoice(Scanner scanner) int
+    }
+
+    class MedicalEntity {
+        <<abstract>>
+        -String id
+        #MedicalEntity(String id)
+        +getId() String
+        +getEntityType()* String
+        +printSummary() void
+        #clone() MedicalEntity
     }
 
     class Person {
@@ -21,7 +34,8 @@ classDiagram
         -String gender
         -String contactNumber
         -String email
-        +Person(String name, int age, String gender, String contactNumber, String email)
+        +Person(String id, String name, int age, String gender, String contactNumber, String email)
+        +getEntityType() String
         +getName() String
         +setName(String name) void
         +getAge() int
@@ -32,47 +46,33 @@ classDiagram
         +setContactNumber(String contactNumber) void
         +getEmail() String
         +setEmail(String email) void
+        #clone() Person
     }
 
     class Patient {
-        -String patientId
         -String[] medicalHistory
         -String[] allergies
         -String bloodGroup
         -String emergencyContact
         -String address
         +Patient(String name, int age, String gender, String contactNumber, String email, String bloodGroup, String emergencyContact, String address)
+        +Patient(String patientId, String name, int age, String gender, String contactNumber, String email, String bloodGroup, String emergencyContact, String address)
+        +getEntityType() String
         +getPatientId() String
-        +getMedicalHistory() String[]
-        +setMedicalHistory(String condition) void
-        +getAllergies() String[]
-        +setAllergies(String[] allergies) void
-        +getBloodGroup() String
-        +setBloodGroup(String bloodGroup) void
-        +getEmergencyContact() String
-        +setEmergencyContact(String emergencyContact) void
-        +getAddress() String
-        +setAddress(String address) void
-        +toString() String
+        +matchesSearchCriteria(String keyword) boolean
+        +clone() Patient
     }
 
     class Doctor {
-        -String doctorId
         -Specialization specialization
         -int yearsOfExperience
         -List~String~ availability
         -double consultationRate
         +Doctor(String name, int age, String gender, String contactNumber, String email, Specialization specialization, int yearsOfExperience, double consultationRate)
+        +Doctor(String doctorId, String name, int age, String gender, String contactNumber, String email, Specialization specialization, int yearsOfExperience, double consultationRate)
+        +getEntityType() String
         +getDoctorId() String
-        +getSpecialization() Specialization
-        +setSpecialization(Specialization specialization) void
-        +getYearsOfExperience() int
-        +setYearsOfExperience(int yearsOfExperience) void
-        +getAvailability() List~String~
-        +setAvailability(List~String~ availability) void
-        +getConsultationRate() double
-        +setConsultationRate(double consultationRate) void
-        +toString() String
+        +matchesSearchCriteria(String keyword) boolean
     }
 
     class Appointment {
@@ -83,18 +83,10 @@ classDiagram
         -String patientId
         -String doctorId
         +Appointment(Long appointmentDateTime, String reasonOfVisit, String patientId, String doctorId)
+        +Appointment(String appointmentId, Long appointmentDateTime, AppointmentStatus appointmentStatus, String reasonOfVisit, String patientId, String doctorId)
         +confirmAppointment() void
         +cancelAppointment() void
-        +getAppointmentId() String
-        +getAppointmentDateTime() Long
-        +setAppointmentDateTime(Long appointmentDateTime) void
-        +getAppointmentStatus() AppointmentStatus
-        +setAppointmentStatus(AppointmentStatus appointmentStatus) void
-        +getReasonOfVisit() String
-        +setReasonOfVisit(String reasonOfVisit) void
-        +getPatientId() String
-        +getDoctorId() String
-        +toString() String
+        +clone() Appointment
     }
 
     class Bill {
@@ -104,28 +96,12 @@ classDiagram
         -double consultationCharge
         -double medicationCharges
         -double labCharges
-        -double subTotal
-        -double tax
-        -double totalAmount
         -BillStatus billStatus
         +Bill(String appointmentId, String patientId, double consultationCharge)
-        -calculateTotal() void
         +calculateAmount() double
         +processPayment() void
-        +isPaymentComplete() BillStatus
         +addCharges(double medication, double labCharges) void
-        +addCharges(double medication) void
         +generateSummary() BillSummary
-        +getBillId() String
-        +getAppointmentId() String
-        +getPatient() String
-        +getConsultationCharge() double
-        +getMedicationCharges() double
-        +getLabCharges() double
-        +getSubTotal() double
-        +getTax() double
-        +getTotalAmount() double
-        +getBillStatus() BillStatus
     }
 
     class BillSummary {
@@ -137,61 +113,50 @@ classDiagram
         -double tax
         -BillStatus billStatus
         -long generatedTimeStamp
-        +BillSummary(String billId, String patientId, double subTotal, double totalAmount, double tax, BillStatus billStatus)
-        +getBillId() String
-        +getPatientId() String
-        +getSubTotal() double
-        +getTotalAmount() double
-        +getTax() double
-        +getBillStatus() BillStatus
-        +getGeneratedTimeStamp() long
-        +toString() String
     }
 
     class PatientService {
         -DataStore~Patient~ patientStore
+        -boolean persistenceEnabled
         +registerPatient(Patient patient) void
         +getPatient(String patientId) Patient
         +updatePatient(Patient patient) void
         +deletePatient(String patientId) void
-        +getAllPatient() List~Patient~
-        +getAllPatients() List~Patient~
-        +searchPatient(String patientId) Patient
-        +searchPatient(int age) List~Patient~
-        +searchPatient(String name, boolean exactMatch) List~Patient~
+        +searchPatientsByKeyword(String keyword) List~Patient~
+        +loadPatientsFromCsv() void
+        +savePatients() void
     }
 
     class DoctorService {
         -DataStore~Doctor~ doctorStore
+        -boolean persistenceEnabled
         +registerDoctor(Doctor doctor) void
         +getDoctor(String doctorId) Doctor
         +updateDoctor(Doctor doctor) void
         +deleteDoctor(String doctorId) void
-        +getAllDoctors() List~Doctor~
-        +searchDoctor(String doctorId) Doctor
-        +searchDoctor(int experience) List~Doctor~
-        +searchDoctor(Specialization specialization) List~Doctor~
-        +searchDoctor(String name, boolean exactMatch) List~Doctor~
+        +searchDoctorsByKeyword(String keyword) List~Doctor~
+        +loadDoctorsFromCsv() void
+        +saveDoctors() void
     }
 
     class AppointmentService {
         -DataStore~Appointment~ appointmentStore
         -DoctorService doctorService
         -PatientService patientService
-        +AppointmentService(PatientService patientService, DoctorService doctorService)
+        -boolean persistenceEnabled
+        -List~AppointmentObserver~ observers
         +createAppointment(String doctorId, String patientId, Long dateTime, String reason) Appointment
-        +bookAppointment(String patientId, String doctorId, Long dateTime, String reason) Appointment
-        +getAppointment(String appointmentId) Appointment
         +cancelAppointment(String appointmentId) void
         +confirmAppointment(String appointmentId) void
-        +getPatientAppointment(String patientId) List~Appointment~
-        +getPatientAppointments(String patientId) List~Appointment~
+        +loadAppointmentsFromCsv() void
+        +saveAppointments() void
+        +addObserver(AppointmentObserver observer) void
+        +removeObserver(AppointmentObserver observer) void
     }
 
     class BillingService {
         -DataStore~Bill~ billStore
         -AppointmentService appointmentService
-        +BillingService(AppointmentService appointmentService)
         +generateBill(String appointmentId, double consultationCharge) Bill
         +generateBill(Appointment appointment, Doctor doctor) Bill
         +addMedicationCharges(String billId, double amount) void
@@ -208,35 +173,50 @@ classDiagram
         +update(String id, T item) void
         +remove(String id) void
         +getAll() List~T~
-        +size() int
-        +contains(String id) boolean
     }
 
-    class Validator {
-        +isValidAge(int age) boolean
-        +isValidEmail(String email) boolean
-        +isValidContactNumber(String phone) boolean
-        +isValidFee(double fee) boolean
-        +validPatient(Patient patient) void
-        +validDoctor(Doctor doctor) void
+    class CSVUtil {
+        +savePatients(List~Patient~ patients, String filePath) void$
+        +loadPatients(String filePath) List~Patient~$
+        +saveDoctors(List~Doctor~ doctors, String filePath) void$
+        +loadDoctors(String filePath) List~Doctor~$
+        +saveAppointments(List~Appointment~ appointments, String filePath) void$
+        +loadAppointments(String filePath) List~Appointment~$
     }
 
     class IdGenerator {
-        -int patientCounter$
-        -int doctorCounter$
-        -int appointmentCounter$
-        -int billCounter$
-        +generatePatientId() String$
-        +generateDoctorId() String$
-        +generateAppointmentId() String$
-        +generateBillId() String$
+        -IdGenerator INSTANCE$
+        -int patientCounter
+        -int doctorCounter
+        -int appointmentCounter
+        -int billCounter
+        -IdGenerator()
+        +getInstance() IdGenerator$
+        +generatePatientId() String
+        +generateDoctorId() String
+        +generateAppointmentId() String
+        +generateBillId() String
+        +syncPatientCounter(String patientId) void
+        +syncDoctorCounter(String doctorId) void
+        +syncAppointmentCounter(String appointmentId) void
     }
 
-    class DateUtil {
-        -SimpleDateFormat dateFormat$
-        +formatDateTime(long timestamp) String$
-        +parseDateTime(String dateTimeStr) long$
-        +isFutureDate(long timestamp) boolean$
+    class BillFactory {
+        +createConsultationBill(Appointment appointment, Doctor doctor) Bill$
+        +createManualBill(String appointmentId, String patientId, double consultationCharges) Bill$
+    }
+
+    class AppointmentObserver {
+        <<interface>>
+        +onAppointmentCreated(Appointment appointment) void
+        +onAppointmentConfirmed(Appointment appointment) void
+        +onAppointmentCancelled(Appointment appointment) void
+    }
+
+    class ConsoleAppointmentNotifier {
+        +onAppointmentCreated(Appointment appointment) void
+        +onAppointmentConfirmed(Appointment appointment) void
+        +onAppointmentCancelled(Appointment appointment) void
     }
 
     class Payable {
@@ -253,70 +233,33 @@ classDiagram
         +displaySearchResult() void
     }
 
-    class Specialization {
-        <<enumeration>>
-        CARDIOLOGY
-        DERMATOLOGY
-        NEUROLOGY
-        PEDIATRICS
-        ORTHOPEDICS
-        GENERAL_MEDICINE
-    }
-
-    class AppointmentStatus {
-        <<enumeration>>
-        PENDING
-        CONFIRMED
-        CANCELLED
-        COMPLETED
-        PATIENT_DO_NOT_COME
-    }
-
-    class BillStatus {
-        <<enumeration>>
-        PAID
-        UNPAID
-    }
-
-    Main --> MediTrackApplication
-    MediTrackApplication --> PatientService
-    MediTrackApplication --> DoctorService
-    MediTrackApplication --> AppointmentService
-    MediTrackApplication --> BillingService
-
+    MedicalEntity <|-- Person
     Person <|-- Patient
     Person <|-- Doctor
+    Searchable <|.. Patient
+    Searchable <|.. Doctor
     Payable <|.. Bill
-
-    Doctor --> Specialization
-    Appointment --> AppointmentStatus
-    Bill --> BillStatus
-    BillSummary --> BillStatus
-    Bill --> BillSummary
+    AppointmentObserver <|.. ConsoleAppointmentNotifier
 
     PatientService *-- DataStore~Patient~
     DoctorService *-- DataStore~Doctor~
     AppointmentService *-- DataStore~Appointment~
     BillingService *-- DataStore~Bill~
 
-    AppointmentService --> PatientService
-    AppointmentService --> DoctorService
-    BillingService --> AppointmentService
+    PatientService --> CSVUtil
+    DoctorService --> CSVUtil
+    AppointmentService --> CSVUtil
+    AppointmentService --> AppointmentObserver
+    BillingService --> BillFactory
 
-    PatientService --> Patient
-    DoctorService --> Doctor
-    AppointmentService --> Appointment
-    BillingService --> Bill
-
-    PatientService --> Validator
-    DoctorService --> Validator
     Patient --> IdGenerator
     Doctor --> IdGenerator
     Appointment --> IdGenerator
     Bill --> IdGenerator
+    Bill --> BillSummary
 ```
 
-## Menu Layer UML
+## Menu And Test Layer UML
 
 ```mermaid
 classDiagram
@@ -327,38 +270,15 @@ classDiagram
         +handleMenuChoice(int choice, Scanner scanner, PatientService patientService, DoctorService doctorService, AppointmentService appointmentService, BillingService billingService) boolean$
     }
 
-    class PatientMenu {
-        +handleMenu(Scanner scanner, PatientService patientService) void$
-        ~printPatient(Patient patient) void$
-    }
-
-    class DoctorMenu {
-        +handleMenu(Scanner scanner, DoctorService doctorService) void$
-        ~printDoctor(Doctor doctor) void$
-    }
-
-    class AppointmentMenu {
-        +handleMenu(Scanner scanner, AppointmentService appointmentService, PatientService patientService, DoctorService doctorService) void$
-        ~printAppointment(Appointment appointment, PatientService patientService, DoctorService doctorService) void$
-    }
-
-    class BillingMenu {
-        +handleMenu(Scanner scanner, BillingService billingService, AppointmentService appointmentService, DoctorService doctorService) void$
-    }
-
-    class SearchMenu {
-        +handleMenu(Scanner scanner, PatientService patientService, DoctorService doctorService, AppointmentService appointmentService) void$
-    }
-
-    class FeatureDemonstrationMenu {
-        +demonstrateFeatures(PatientService patientService, DoctorService doctorService) void$
-    }
-
-    class ConsoleInput {
-        ~readInt(Scanner scanner, String prompt) int$
-        ~readDouble(Scanner scanner, String prompt) double$
-        ~readRequired(Scanner scanner, String prompt) String$
-    }
+    class PatientMenu
+    class DoctorMenu
+    class AppointmentMenu
+    class BillingMenu
+    class SearchMenu
+    class FeatureDemonstrationMenu
+    class ConsoleInput
+    class TestRunner
+    class MainMenuAutomationTest
 
     MainMenu --> PatientMenu
     MainMenu --> DoctorMenu
@@ -366,21 +286,19 @@ classDiagram
     MainMenu --> BillingMenu
     MainMenu --> SearchMenu
     MainMenu --> FeatureDemonstrationMenu
-
     PatientMenu --> ConsoleInput
     DoctorMenu --> ConsoleInput
     AppointmentMenu --> ConsoleInput
     BillingMenu --> ConsoleInput
     SearchMenu --> ConsoleInput
-
-    SearchMenu --> PatientMenu
-    SearchMenu --> DoctorMenu
-    SearchMenu --> AppointmentMenu
+    MainMenuAutomationTest --> MainMenu
 ```
 
 ## Notes
 
-- The UML shows implemented relationships, not desired future architecture.
-- `Appointment` and `Bill` hold foreign-key-like IDs rather than object references.
-- `Searchable` currently exists as an interface but is not implemented by the domain classes.
-- Menu classes are static procedural console controllers. That is acceptable for the current CLI assignment, but a larger application would likely replace them with instance-based controllers or a web/API layer.
+- `Person` is concrete but inherits shared identity behavior from abstract `MedicalEntity`.
+- `Patient` deep-copies mutable arrays in `clone()`.
+- `Appointment` uses `super.clone()` because its fields are IDs, immutable values, or enums.
+- `Searchable` is implemented by `Patient` and `Doctor`.
+- CSV persistence covers patients, doctors, and appointments. Bills remain in memory only.
+- `AppointmentService` owns observer notification because appointment lifecycle changes happen in the service layer.
