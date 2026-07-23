@@ -1,0 +1,124 @@
+package com.airtribe.meditrack.service;
+
+import com.airtribe.meditrack.constants.Constants;
+import com.airtribe.meditrack.entity.Doctor;
+import com.airtribe.meditrack.entity.Specialization;
+import com.airtribe.meditrack.exception.DoctorNotFoundException;
+import com.airtribe.meditrack.util.CSVUtil;
+import com.airtribe.meditrack.util.DataStore;
+import com.airtribe.meditrack.util.Validator;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class DoctorService {
+    private DataStore<Doctor> doctorStore;
+    private boolean persistenceEnabled;
+
+    public DoctorService(){
+        this(true);
+    }
+
+    public DoctorService(boolean persistenceEnabled){
+        this.doctorStore = new DataStore<Doctor>();
+        this.persistenceEnabled = persistenceEnabled;
+    }
+
+    //CRUD OPERATION
+    public void registerDoctor(Doctor doctor){
+        Validator.validDoctor(doctor);
+        doctorStore.add(doctor.getDoctorId(), doctor);
+        saveDoctors();
+    }
+
+    public Doctor getDoctor(String doctorId) throws DoctorNotFoundException {
+        Doctor doctor = doctorStore.findById(doctorId);
+        if (doctor == null){
+            throw new DoctorNotFoundException("Doctor Not Found: " + doctorId);
+        }
+        return doctor;
+    }
+
+    public void updateDoctor(Doctor doctor){
+        Validator.validDoctor(doctor);
+        doctorStore.update(doctor.getDoctorId(), doctor);
+        saveDoctors();
+    }
+
+    public void deleteDoctor(String doctorId){
+        doctorStore.remove(doctorId);
+        saveDoctors();
+    }
+
+    public List<Doctor> getAllDoctors(){
+        return new ArrayList<>(doctorStore.getAll());
+    }
+
+    public Doctor searchDoctor(String doctorId){
+        return doctorStore.findById(doctorId);
+    }
+
+    public List<Doctor> searchDoctor(int experience){
+        List<Doctor> results = new ArrayList<>();
+        for (Doctor d: doctorStore.getAll()){
+            if(d.getYearsOfExperience() == experience){
+                results.add(d);
+            }
+        }
+        return results;
+    }
+
+    public List<Doctor> searchDoctor(Specialization specialization){
+        List<Doctor> results = new ArrayList<>();
+        for (Doctor d: doctorStore.getAll()){
+            if(d.getSpecialization() == specialization){
+                results.add(d);
+            }
+        }
+        return results;
+    }
+
+    public List<Doctor> searchDoctor(String name, boolean exactMatch){
+        List<Doctor> results = new ArrayList<>();
+        for(Doctor d: doctorStore.getAll()){
+            if(exactMatch){
+                if(d.getName().equalsIgnoreCase(name)){
+                    results.add(d);
+                }
+            } else {
+                if(d.getName().toLowerCase().contains(name.toLowerCase())){
+                    results.add(d);
+                }
+            }
+        }
+        return results;
+    }
+
+    public List<Doctor> searchDoctorsByKeyword(String keyword) {
+        List<Doctor> results = new ArrayList<>();
+        for (Doctor doctor : doctorStore.getAll()) {
+            if (doctor.matchesSearchCriteria(keyword)) {
+                results.add(doctor);
+            }
+        }
+        return results;
+    }
+
+    public void loadDoctors(List<Doctor> doctors) {
+        for (Doctor doctor : doctors) {
+            Validator.validDoctor(doctor);
+            doctorStore.add(doctor.getDoctorId(), doctor);
+        }
+    }
+
+    public void loadDoctorsFromCsv() {
+        loadDoctors(CSVUtil.loadDoctors(Constants.DOCTORS_FILE));
+    }
+
+    public void saveDoctors() {
+        if (!persistenceEnabled) {
+            return;
+        }
+        CSVUtil.saveDoctors(getAllDoctors(), Constants.DOCTORS_FILE);
+    }
+}
