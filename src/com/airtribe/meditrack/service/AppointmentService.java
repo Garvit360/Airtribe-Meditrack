@@ -2,12 +2,15 @@ package com.airtribe.meditrack.service;
 
 import com.airtribe.meditrack.constants.Constants;
 import com.airtribe.meditrack.entity.Appointment;
+import com.airtribe.meditrack.entity.AppointmentStatus;
 import com.airtribe.meditrack.entity.Doctor;
 import com.airtribe.meditrack.entity.Patient;
 import com.airtribe.meditrack.exception.AppointmentNotFoundException;
+import com.airtribe.meditrack.exception.InvalidDataException;
 import com.airtribe.meditrack.observer.AppointmentObserver;
 import com.airtribe.meditrack.util.CSVUtil;
 import com.airtribe.meditrack.util.DataStore;
+import com.airtribe.meditrack.util.DateUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,12 +37,37 @@ public class AppointmentService {
 
         Patient patient = patientService.getPatient(patientId);
         Doctor doctor = doctorService.getDoctor(doctorId);
+        assertDoctorSlotFree(doctorId, dateTime);
 
         Appointment appointment = new Appointment(dateTime, reason, patientId, doctorId);
         appointmentStore.add(appointment.getAppointmentId(), appointment);
         saveAppointments();
         notifyAppointmentCreated(appointment);
         return appointment;
+    }
+
+    private void assertDoctorSlotFree(String doctorId, long startMillis) {
+        long durationMs = Constants.APPOINTMENT_DURATION_MINUTES * 60L * 1000L;
+        int sameDayCount = 0;
+        for (Appointment existing : appointmentStore.getAll()) {
+            if (!existing.getDoctorId().equals(doctorId)) {
+                continue;
+            }
+            if (existing.getAppointmentStatus() == AppointmentStatus.CANCELLED) {
+                continue;
+            }
+            if (DateUtil.sameCalendarDay(existing.getAppointmentDateTime(), startMillis)) {
+                sameDayCount++;
+            }
+            if (DateUtil.slotsOverlap(existing.getAppointmentDateTime(), startMillis, durationMs)) {
+                throw new InvalidDataException(
+                        "Doctor " + doctorId + " already has an appointment in this time slot");
+            }
+        }
+        if (sameDayCount >= Constants.MAX_APPOINTMENTS_PER_DAY) {
+            throw new InvalidDataException(
+                    "Doctor " + doctorId + " has reached the daily appointment limit");
+        }
     }
 
     public Appointment bookAppointment(String patientId, String doctorId, Long dateTime, String reason){
