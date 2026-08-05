@@ -1,6 +1,6 @@
 # Airtribe MediTrack
 
-MediTrack is a Java console application for managing patients, doctors, appointments, billing, searching, and CSV-based persistence.
+MediTrack is a Java console application for managing patients, doctors, appointments, billing, and basic search workflows. It is built as an OOP learning project and includes simple CSV persistence for core records.
 
 ## Quick Start
 
@@ -10,13 +10,13 @@ Compile:
 javac -d /tmp/meditrack-build $(find src -name '*.java')
 ```
 
-Run the app:
+Run:
 
 ```bash
 java -cp /tmp/meditrack-build Main
 ```
 
-Run the app and load persisted CSV data:
+Run with persisted CSV data:
 
 ```bash
 java -cp /tmp/meditrack-build Main --loadData
@@ -24,67 +24,26 @@ java -cp /tmp/meditrack-build Main --loadData
 
 ## Tests
 
-Run the manual feature tests:
+Run manual feature checks:
 
 ```bash
 java -cp /tmp/meditrack-build com.airtribe.meditrack.test.TestRunner
 ```
 
-Run the automated console menu flow:
+Run automated menu-flow checks:
 
 ```bash
 java -cp /tmp/meditrack-build com.airtribe.meditrack.test.MainMenuAutomationTest
 ```
 
-`MainMenuAutomationTest` simulates typed menu input for CRUD, appointment, billing, and search flows.
+## Documentation
 
-## Implemented Features
+- [Project brief](docs/project.md)
+- [System design](docs/system-design-diagram.md)
+- [Class UML](docs/class-uml-diagram.md)
+- [JVM report](docs/JVM_Report.md)
+- [Setup instructions](docs/Setup_Instructions.md)
 
-- Patient and doctor CRUD.
-- Appointment create, view, confirm, cancel, and list by patient.
-- Billing with consultation, medication, lab charges, tax, summary, and payment status.
-- Patient and doctor search by explicit criteria and `Searchable` keyword matching.
-- `MedicalEntity` abstraction above `Person`.
-- Deep clone demonstration for `Patient`; safe clone for `Appointment`.
-- Immutable `BillSummary`.
-- CSV persistence for patients, doctors, and appointments.
-- `--loadData` startup loading.
-- Singleton `IdGenerator`.
-- `BillFactory` for bill creation.
-- Observer notifications for appointment lifecycle events.
+## Notes
 
-## Persistence
-
-Runtime CSV files are stored under:
-
-```text
-data/patients.csv
-data/doctors.csv
-data/appointments.csv
-```
-
-The CSV implementation intentionally uses `String.split(",")` as required by the assignment, so user-entered fields should not contain commas.
-
-## Project Structure
-
-```text
-src/
-  Main.java
-  com/airtribe/meditrack/
-    MediTrackApplication.java
-    constants/
-    entity/
-    exception/
-    interfaces/
-    menu/
-    observer/
-    service/
-    test/
-    util/
-docs/
-  project.md
-  JVM_Report.md
-  Setup_Instructions.md
-  class-uml-diagram.md
-  system-design-diagram.md
-```
+CSV persistence stores patient, doctor, and appointment data under `data/`. Billing records are currently runtime-only.
