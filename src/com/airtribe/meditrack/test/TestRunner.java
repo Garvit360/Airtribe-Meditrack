@@ -6,6 +6,7 @@ import com.airtribe.meditrack.entity.Bill;
 import com.airtribe.meditrack.entity.Doctor;
 import com.airtribe.meditrack.entity.Patient;
 import com.airtribe.meditrack.entity.Specialization;
+import com.airtribe.meditrack.exception.InvalidDataException;
 import com.airtribe.meditrack.observer.AppointmentObserver;
 import com.airtribe.meditrack.service.AppointmentService;
 import com.airtribe.meditrack.service.BillingService;
@@ -37,6 +38,7 @@ public class TestRunner {
         testBillingServiceUsesFactoryCreatedBillData();
         testAppointmentObserverReceivesLifecycleEvents();
         testRemovedAppointmentObserverStopsReceivingEvents();
+        testDoctorScheduleConflictRejected();
 
         System.out.println("Tests passed: " + passed);
         System.out.println("Tests failed: " + failed);
@@ -321,6 +323,49 @@ public class TestRunner {
                 "Removed observer should not receive appointment confirmed events");
         assertEquals(0, observer.cancelledCount,
                 "Removed observer should not receive appointment cancelled events");
+    }
+
+    private static void testDoctorScheduleConflictRejected() {
+        PatientService patientService = new PatientService(false);
+        DoctorService doctorService = new DoctorService(false);
+        AppointmentService appointmentService = new AppointmentService(patientService, doctorService, false);
+
+        Patient patientOne = new Patient("Conflict Patient One", 30, "Female", "9876543231",
+                "conflict.one@example.com", "O+", "9123456791", "Pune");
+        Patient patientTwo = new Patient("Conflict Patient Two", 31, "Male", "9876543232",
+                "conflict.two@example.com", "A+", "9123456792", "Pune");
+        Doctor doctor = new Doctor("Conflict Doctor", 48, "Male", "9876543233",
+                "conflict.doctor@example.com", Specialization.GENERAL_MEDICINE, 20, 900.0);
+
+        patientService.registerPatient(patientOne);
+        patientService.registerPatient(patientTwo);
+        doctorService.registerDoctor(doctor);
+
+        long slotStart = 1800000000000L;
+        long fifteenMinutesMs = 15L * 60L * 1000L;
+        long thirtyMinutesMs = 30L * 60L * 1000L;
+
+        Appointment first = appointmentService.createAppointment(
+                doctor.getDoctorId(), patientOne.getPatientId(), slotStart, "FirstSlot");
+        assertTrue(first != null, "First booking at T should succeed");
+
+        boolean overlapRejected = false;
+        try {
+            appointmentService.createAppointment(
+                    doctor.getDoctorId(), patientTwo.getPatientId(), slotStart + fifteenMinutesMs, "Overlap");
+        } catch (InvalidDataException e) {
+            overlapRejected = true;
+        }
+        assertTrue(overlapRejected, "Booking at T + 15min should throw InvalidDataException");
+
+        Appointment adjacent = appointmentService.createAppointment(
+                doctor.getDoctorId(), patientTwo.getPatientId(), slotStart + thirtyMinutesMs, "Adjacent");
+        assertTrue(adjacent != null, "Booking at T + 30min should succeed while first is active");
+
+        appointmentService.cancelAppointment(first.getAppointmentId());
+        Appointment reused = appointmentService.createAppointment(
+                doctor.getDoctorId(), patientOne.getPatientId(), slotStart, "ReuseCancelled");
+        assertTrue(reused != null, "Rebooking at T after cancel should succeed");
     }
 
     private static class RecordingAppointmentObserver implements AppointmentObserver {
